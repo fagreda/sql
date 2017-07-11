@@ -799,4 +799,126 @@ begin transaction
 select * from Categories
 select * from Products
 
-exec sp_modificaciones 'bebidas','bebidas gaseosas',null,2
+exec sp_modificaciones 'bebidas','bebidas gaseosas',null,2 
+
+
+/* FINALAZO */ 
+
+
+/* Parte 2 */ 
+
+
+/*
+ Pregunta 1 
+ Listar por categoría (id y nombre) el producto (id, nombre, pu) con el precio unitario más alto
+ y precio unitario más bajo, de los producto quefueron vendidos en 1998 y cuyos nombres del cliente empieza con LO.   
+
+*/
+
+create view vw_list_products_x_category_max as
+select c.CategoryID, c.CategoryName,  MAX(p.UnitPrice) 'Precio Maximo'
+from Products p join Categories c on p.CategoryID = c.CategoryID 
+group by c.CategoryID, c.CategoryName
+
+
+select vw1.CategoryID, vw1.CategoryName, p.ProductID, p.ProductName, vw1.[Precio Maximo], YEAR(o.OrderDate) 'Anio'
+from  Products P
+join   vw_list_products_x_category_max vw1 on  P.CategoryID=vw1.CategoryID and  P.UnitPrice=vw1.[Precio Maximo]
+join [Order Details] od on od.ProductID = p.ProductID  
+join Orders o on o.OrderID = od.OrderID 
+where YEAR(o.OrderDate) = 1998 
+group by vw1.CategoryID, vw1.CategoryName, p.ProductID, p.ProductName, vw1.[Precio Maximo], YEAR(o.OrderDate) 
+
+
+
+
+create view vw_list_products_x_category_min as
+select c.CategoryID, c.CategoryName, MIN(p.UnitPrice) 'Precio Minimo'
+from Products p join Categories c on p.CategoryID = c.CategoryID 
+group by c.CategoryID, c.CategoryName
+
+
+
+select vw1.CategoryID, vw1.CategoryName, vw2.[Precio Minimo], vw1.[Precio Maximo]
+from vw_list_products_x_category_max vw1 
+join vw_list_products_x_category_min vw2 on vw1.CategoryID = vw2.CategoryID
+
+
+
+/*
+ Pregunta 1 
+ Listar por categoría (id y nombre) el producto (id, nombre, pu) con el precio unitario más alto
+ y precio unitario más bajo, de los producto quefueron vendidos en 1998 y cuyos nombres del cliente empieza con LO.   
+
+*/
+
+/*
+ Pregunta 2
+
+*/
+
+select e.EmployeeID, e.LastName, e.FirstName, e.Country
+from Employees e 
+join Orders o on o.EmployeeID = e.EmployeeID
+join Customers c on c.CustomerID = o.CustomerID
+where YEAR(e.HireDate) >= 1992 and YEAR(e.HireDate) <= 1994 and c.Country <> e.Country
+
+
+/*
+ Pregunta 3
+
+*/
+
+/* funcion (Id, tipo, Formato) */ 
+
+ALTER FUNCTION FuncPersonName (@Id varchar, @Tipo char, @Formato char)  
+ RETURNS CHAR(200) 
+ AS 
+ BEGIN  
+    DECLARE @FinalName CHAR(200)  
+	    
+		IF @Tipo = 'E'	   
+		BEGIN			
+			SELECT @FinalName = UPPER(e.FirstName) + ' ' + UPPER(e.LastName)
+			FROM Employees e 
+			WHERE e.EmployeeID = @Id			
+		END 
+
+		IF @Tipo = 'C'	   
+		BEGIN
+			SELECT @FinalName = UPPER(c.CompanyName) 
+			FROM Customers c 
+			WHERE c.CustomerID = @Id			 
+		END 
+
+		IF @Tipo = 'P'	   
+		BEGIN
+			SELECT @FinalName =  UPPER(s.CompanyName) 
+			FROM Suppliers s 
+			WHERE s.SupplierID = @Id			
+		END  
+
+		/**/ 
+
+		IF @Formato = 'NIA'	   
+		BEGIN		   
+			RETURN @FinalName 		
+		END  
+
+		IF @Formato = 'ANI'	   
+		BEGIN
+		   	RETURN @FinalName 
+		END  
+
+
+		RETURN @FinalName	
+		
+ END 
+
+SELECT  dbo.FuncPersonName ('3','P', 'ANI')
+
+SELECT * from Customers
+
+
+
+/* */
