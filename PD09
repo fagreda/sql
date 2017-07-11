@@ -1,0 +1,643 @@
+/*
+Transact - SQL:
+
+DDL: Data Definition Language
+---> Define Objetos sobre la BD
+Crear: CREATE
+Modificar: ALTER
+Eliminar: DROP
+
+DML: Data Manupulation Language
+---> Manipula registros de la BD
+
+Crear/Insertar: INSERT
+Modificar: Update
+Eliminar: delete
+Seleccionar: Select
+
+*/
+
+
+/*PD9*/
+/*1.Muestre el código y nombre de todos 
+los clientes (companyname) que tienen órdenes 
+pendientes de despachar.*/
+
+select * --los atributos
+from Categories --las tablas
+
+select c.CustomerID,c.CompanyName
+from Customers c join Orders o on c.CustomerID=o.CustomerID
+where o.ShippedDate is null --condiciones de filtro
+
+/*2.Muestre el código y nombre de todos los clientes
+ (companyname) que tienen órdenes pendientes de despachar,  
+ y la cantidad de órdenes con esa característica.*/
+
+select *--c.CustomerID,c.CompanyName
+from Customers c join Orders o on c.CustomerID=o.CustomerID
+where o.ShippedDate is null
+
+/*Funciones de agregacion*/
+/*
+SUM
+MAX
+MIN
+COUNT
+AVG
+
+GROUP BY tiene como mínimo TODOS los campos del SELECT MENOS la funcion de agregación
+*/
+
+select c.CustomerID,c.CompanyName,COUNT(o.OrderID) 'Q Ordenes'
+from Customers c join Orders o on c.CustomerID=o.CustomerID
+where o.ShippedDate is null
+group by c.CustomerID,c.CompanyName
+order by 3 desc, c.CompanyName asc
+
+/*3.Encontrar los pedidos que debieron despacharse a 
+una ciudad o código postal diferente de la ciudad o código
+ postal del cliente que los solicitó. Para estos pedidos, 
+ mostrar el país, ciudad y código postal del destinatario, 
+ así como la cantidad total de pedidos por cada destino.*/
+
+ select *
+ from Orders y Customers
+ condicion= shippostalcode<>postalcode or shipcity<>city(customers)
+ 
+select o.ShipCountry,o.ShipCity,o.ShipPostalCode, COUNT(o.OrderID) as Cantidad
+from Customers c join Orders o on c.CustomerID=o.CustomerID
+where c.City<>o.ShipCity or c.PostalCode<>o.ShipPostalCode
+group by o.ShipCountry,o.ShipCity,o.ShipPostalCode
+
+
+/*4.	Seleccionar todas las compañías de envío 
+(código y nombre) que hayan efectuado algún despacho 
+a México entre el primero de enero y el 28 de febrero de 1998.
+Formatos sugeridos a emplear para fechas:
+•	Formatos numéricos de fecha (por ejemplo, '15/4/1998')
+•	Formatos de cadenas sin separar (por ejemplo, '19981207') 
+*/
+select *
+from ShipperID (Shippers)=ShipVia(Orders)
+condicion: ShipCountry='MEXICO' 
+and ShippedDate between 'fecha inicio' and 'fecha fin'
+
+select s.ShipperID,s.CompanyName
+from Orders o join Shippers s on o.ShipVia=s.ShipperID
+where o.ShipCountry='Mexico' and o.ShippedDate between '19980101' and '19980228'
+
+
+/*5.Mostrar los nombres y apellidos de los empleados 
+junto con los nombres y apellidos de sus respectivos jefes */
+
+select e.EmployeeID,e.LastName,e.FirstName,e.ReportsTo,
+		j.LastName,j.FirstName
+from Employees e inner join Employees j on e.ReportsTo=j.EmployeeID
+
+select e.EmployeeID,e.LastName,e.FirstName,e.ReportsTo,
+		j.LastName,j.FirstName
+from Employees e left join Employees j on e.ReportsTo=j.EmployeeID
+
+select e.EmployeeID,e.LastName,e.FirstName,e.ReportsTo,
+		j.LastName,j.FirstName
+from Employees e right join Employees j on e.ReportsTo=j.EmployeeID
+
+/*6.Mostrar el ranking de venta anual por país de origen
+ del empleado, tomando como base la fecha de las órdenes, 
+ y mostrando el resultado por año y venta total (descendente).*/
+
+ Select e.Country, YEAR(o.OrderDate) 'Año', convert(money,SUM((od.Quantity*od.UnitPrice)*(1-od.Discount))) as Monto_Venta
+ from Employees e join Orders o on e.EmployeeID=o.EmployeeID
+				  join [Order Details] od on o.OrderID=od.OrderID
+ group by e.Country, YEAR(o.OrderDate)
+ order by YEAR(o.OrderDate),3 desc
+
+ --PD10
+
+ /*1.Mostrar de la tabla Orders, para los pedidos 
+ cuya diferencia entre la fecha de despacho y 
+ la fecha de  la orden  sea mayor a 4 semanas, 
+ las siguientes columnas: 
+ OrderId, CustomerId, Orderdate, 
+ Shippeddate, diferencia en días,  
+ diferencia en semanas y diferencia 
+ en meses entre ambas fechas.
+ */
+
+ select o.OrderID,o.CustomerID,o.OrderDate,o.ShippedDate,
+		DATEDIFF(wk,o.OrderDate,o.ShippedDate) 'Dif Semanas',
+		DATEDIFF(D,o.OrderDate,o.ShippedDate) 'Dif Dias',
+		DATEDIFF(MONTH,o.OrderDate,o.ShippedDate) 'Dif Meses'
+ from Orders o
+ where DATEDIFF(WW, o.OrderDate,o.ShippedDate)>4
+
+ /*2.La empresa tiene como política otorgar a los jefes 
+ una comisión del 0.5% sobre la venta de sus subordinados. 
+ Calcule la comisión mensual que le ha correspondido 
+ a cada jefe por cada año (basándose en la fecha de la orden) 
+ según las ventas que figuran en la base de datos.
+ Muestre el código del jefe, su apellido, el año 
+ y mes de cálculo, el monto acumulado  de venta de
+  sus subordinados, y la comisión obtenida. */
+
+select j.EmployeeID,j.LastName, YEAR(o.OrderDate) 'Año',
+		Mes=MONTH(o.OrderDate),
+		Venta=SUM((od.Quantity*od.UnitPrice)*(1-od.Discount)),
+		Comision=SUM((od.Quantity*od.UnitPrice)*(1-od.Discount))*0.005
+from Employees e join Employees j on e.ReportsTo=j.EmployeeID
+				join Orders o on o.EmployeeID=e.EmployeeID
+				join [Order Details] od on o.OrderID=od.OrderID
+group by j.EmployeeID,j.LastName, YEAR(o.OrderDate) ,
+		MONTH(o.OrderDate)
+
+
+/*3.	Obtener los países donde el importe total anual de 
+las órdenes enviadas supera los $45,000. Para determinar el año,
+ tome como base la fecha de la orden (orderdate). 
+ Ordene el resultado monto total de venta. 
+Muestre el país, el año, y el importe anual de venta.
+*/
+
+select o.ShipCountry,YEAR(o.OrderDate) 'Año',
+		SUM(od.UnitPrice*od.Quantity*(1-od.Discount)) 'Importe_Venta'
+from Orders o join [Order Details] od on o.OrderID=od.OrderID
+group by o.ShipCountry,YEAR(o.OrderDate)
+having SUM(od.UnitPrice*od.Quantity*(1-od.Discount))>45000
+order by 3 desc
+
+--having: se usa para comparar funciones de agregación
+
+/*
+4.De cada producto que haya tenido venta en por lo 
+menos 20 transacciones (ordenes) del año 1997 mostrar 
+el código, nombre y cantidad de unidades vendidas y 
+cantidad de ordenes en las que se vendió
+*/
+
+select p.ProductID,p.ProductName,
+		SUM(od.Quantity) 'Unidades Vendidas',
+		COUNT(od.OrderID) 'Cantidad de Ordenes'	
+from Products p join [Order Details] od on p.ProductID=od.ProductID
+				join Orders o on od.OrderID=o.OrderID
+where YEAR(o.OrderDate)=1997
+group by p.ProductID,p.ProductName
+having COUNT(od.ORderID)>=20
+
+/*
+5.	Determinar si existe algún problema de 
+stock para la atención de las órdenes pendientes de despacho.
+Para ello, determinar la relación de productos no 
+descontinuados cuyo stock actual (unitsinstock) 
+es menor que la cantidad de unidades pendientes de 
+despacho (as que figuran en pedidos que no han sido despachados).
+Mostrar el nombre del producto, la cantidad pendiente
+ de entrega, el stock actual y la cantidad de unidades 
+ que falta para la atención de las órdenes.
+*/
+
+/*
+Discontinued : 
+0 = NO DESCONTINUADO
+1 = DESCONTINUADO 
+*/
+
+select p.ProductName,p.UnitsInStock, SUM (od.Quantity) 'Pendiente',
+		SUM(od.Quantity)-p.UnitsInStock 'Stock Faltante'
+from Products p join [Order Details] od on p.ProductID=od.ProductID
+				join Orders o on od.OrderID=o.OrderID
+where o.ShippedDate is null and p.Discontinued=0
+group by p.ProductName,p.UnitsInStock
+having p.UnitsInStock<SUM (od.Quantity)
+
+/*6.Mostar la lista de productos descontinuados 
+(nombre y precio) cuyo precio es menor al precio promedio.*/
+
+/*Discontinued = 1*/
+
+select p.ProductID,p.ProductName,p.UnitPrice
+from Products p
+where p.Discontinued=1 and p.UnitPrice> (select AVG(p.UnitPrice)
+										 from Products p)
+
+select AVG(p.UnitPrice)
+from Products p
+
+/*7.Listar aquellas órdenes cuya diferencia entre la 
+fecha de la orden y la fecha de despacho es mayor que: 
+a.	El promedio en días de  dicha diferencia en todas las órdenes.	
+b.	El promedio en semanas de dicha diferencia en todas las órdenes.
+*/
+
+select o.OrderID,o.OrderDate,o.ShippedDate,
+		DATEDIFF(DD,o.OrderDate,o.ShippedDate)'Diferencia'
+from Orders o
+where DATEDIFF(DD,o.OrderDate,o.ShippedDate)> (select AVG(DATEDIFF(DD,o.OrderDate,o.ShippedDate))
+												from Orders o)
+
+/*8.Mostrar los productos no descontinuados 
+(código, nombre de producto, nombre de categoría y precio) 
+cuyo precio unitario es mayor al precio promedio de su 
+respectiva categoría  */
+
+/*
+Discontinued : 
+0 = NO DESCONTINUADO
+1 = DESCONTINUADO 
+*/
+
+select p.ProductID,p.ProductName,p.CategoryID,p.UnitPrice
+from Products p
+where p.Discontinued=0 and p.UnitPrice >(select AVG(pp.UnitPrice)
+										 from Products pp
+										 where p.CategoryID=pp.CategoryID
+						                 )
+order by 1
+
+--lógica
+select p.ProductID,p.ProductName,p.CategoryID,p.UnitPrice
+from Products p
+where p.Discontinued=0
+
+select p.CategoryID,AVG(p.UnitPrice)
+from Products p
+group by p.CategoryID
+
+/*9.Mostrar la relación de productos (Nombre) no descontinuados 
+de la categoría 8 que no han tenido venta entre el 1° y el 15 de 
+Agosto de 1996. */
+
+--PASO 1:
+--Mostrar la relación de productos (Nombre) no descontinuados 
+--de la categoría 8 que HAN tenido venta entre el 1° y el 15 de 
+--Agosto de 1996
+
+select p.ProductID,p.ProductName,p.CategoryID
+from Products p 
+where p.Discontinued=0 and p.CategoryID=8
+		and p.ProductID NOT IN (
+							select p.ProductID
+							from Products p join [Order Details] od on p.ProductID=od.ProductID
+											join Orders o on od.OrderID=o.OrderID
+							where p.CategoryID=8 and p.Discontinued=0
+								  and o.OrderDate between '19960801' and '19960815'
+							)
+
+select o.OrderID,o.OrderDate,o.ShipCountry
+from Orders o
+where o.ShipCountry NOT IN ('France','Germany')
+
+/*10.Encontrar la categoría a la que pertenece la mayor 
+cantidad de productos. Mostrar el nombre de la categoría 
+y la cantidad de productos que comprende*/
+
+select p.CategoryID, c.CategoryName,COUNT(p.ProductID)
+from Products p join Categories c on p.CategoryID=c.CategoryID
+group by p.CategoryID , c.CategoryName
+having COUNT (p.ProductID) >= ALL (select COUNT(p.ProductID)
+									from Products p
+									group by p.CategoryID )
+
+select COUNT(p.ProductID)
+from Products p
+group by p.CategoryID 
+
+/*11.Encontrar el producto de cada categoría que tuvo la mayor venta 
+(en unidades) durante el año 1997, liste la categoría, 
+el código de producto, nombre del producto, y la cantidad vendida.*/
+
+--paso 1
+
+/*Encontrar la venta (en unidades) de cada producto  
+durante el año 1997, liste la categoría, 
+el código de producto, nombre del producto, y la cantidad vendida.*/
+
+
+alter view vw_venta_x_producto as
+select c.CategoryID,c.CategoryName,
+		p.ProductID, p.ProductName, SUM(od.Quantity) 'Cantidad'
+from Categories c join Products p on c.CategoryID=p.CategoryID
+				  join [Order Details] od on p.ProductID=od.ProductID
+				  join Orders o on od.OrderID=o.OrderID
+where YEAR(o.OrderDate)=1997
+group by c.CategoryID,c.CategoryName,p.ProductID, p.ProductName
+order by 1
+
+create view vw_maximo_categoria as
+select vw1.CategoryID,vw1.CategoryName,MAX(vw1.Cantidad) 'maximo'
+from vw_venta_x_producto vw1
+group by vw1.CategoryID,vw1.CategoryName
+
+
+select * from vw_venta_x_producto
+select * from vw_maximo_categoria
+
+select vw1.CategoryID,vw1.CategoryName,vw1.ProductID,vw1.ProductName,vw2.maximo
+from vw_venta_x_producto vw1 join vw_maximo_categoria vw2 on vw1.CategoryID=vw2.CategoryID
+where vw1.Cantidad=vw2.maximo
+order by 1
+
+/*12.Encontrar el pedido de mayor importe por país al cual se despachó. 
+Mostrar el país y el monto del pedido,  ordenado por monto de mayor a menor.*/
+
+Create view vw_monto_pais_orden as
+select o.ShipCountry,o.OrderID, SUM(od.Quantity*od.UnitPrice*(1-od.Discount))'Monto'
+from Orders o join [Order Details] od on o.OrderID=od.OrderID
+group by o.ShipCountry,o.OrderID
+order by 1
+
+create view vw_maximo_pais as
+select vw1.ShipCountry,MAX(vw1.Monto) 'maximo'
+from vw_monto_pais_orden vw1
+group by vw1.ShipCountry
+
+select * from vw_monto_pais_orden
+select * from vw_maximo_pais
+
+select vw1.ShipCountry,vw1.OrderID,vw2.maximo
+from vw_monto_pais_orden vw1 join vw_maximo_pais vw2 on vw1.ShipCountry=vw2.ShipCountry
+where vw1.Monto=vw2.maximo
+order by 3
+
+/*PD11*/
+--Ejercicio 1
+
+create function fn_num_emp()
+returns int --tipo de dato
+as
+begin
+	--variables
+	declare @num_emp int
+
+	--query
+	select @num_emp=count(e.EmployeeID)
+	from Employees e
+
+	--retornar
+	return @num_emp
+end
+
+select dbo.fn_num_emp()
+
+/*2.Crear una función que devuelva el número de subordinados
+ un jefe (Empleado)*/
+
+create function fn_num_sub(@id_jefe int)
+returns int
+as
+begin
+	--declaracion
+	declare @totsub int
+
+	--query
+	select @totsub=count(e.EmployeeID)
+	from Employees e
+	where e.ReportsTo=@id_jefe
+
+	--retornar
+	return @totsub
+end
+
+select dbo.fn_num_sub(2)
+
+/*FUNCIONES*/
+
+/*
+--ESCALARES: retornan siempre un valor
+--TABULARES: retornan una tabla
+
+*/
+
+/*3.Crear una función que liste el número de ordenes por empleado, 
+si solo se conoce parte del nombre del empleado.*/
+
+create function fn_ordenes_x_emp (@nombre nvarchar(10))
+returns table 
+as
+RETURN (
+	select e.EmployeeID,e.FirstName,e.LastName, COUNT(o.OrderID) 'q_ordenes'
+	from Orders o join Employees e on o.EmployeeID=e.EmployeeID
+	where e.FirstName like @nombre
+	group by e.EmployeeID,e.FirstName,e.LastName
+	)
+
+select *
+from dbo.fn_ordenes_x_emp('a%')
+
+
+/*4.Crear una función que liste para un País (Parámetro de entrada),
+ el Nombre de la compañía, Ciudad, País (Suppliers), 
+ Nombre de Producto, 
+ Cantidad, Precio Unitario y Descuento de Producto.*/
+
+create function fn_detalle_proveedores (@Pais nvarchar(15))
+ returns table
+ as
+ RETURN(
+	 select s.CompanyName,s.City,s.Country, p.ProductName,
+			od.Quantity,od.UnitPrice,od.Discount
+	 from Suppliers s join Products p on s.SupplierID=p.SupplierID
+					  join [Order Details] od on od.ProductID=p.ProductID
+	 where s.Country like @Pais)
+
+select *
+from dbo.fn_detalle_proveedores('_a%')
+
+/*5.Ejecute la función Cos(0), luego la función Getdate( ) 
+repetidas veces*/
+
+
+select cos(0) --Deterministica : no cambian el valor de retorno
+select getdate() --No Deterministica: cambian el valor del retorno
+
+/*Procedimientos*/
+
+/*6.Crear un procedimiento almacenado que liste el nombre
+ de la compañía, nombre del contacto, ciudad y 
+ número de teléfono de los clientes*/
+
+ alter procedure sp_lista_clientes as
+ select c.CompanyName,c.ContactName,c.City,c.Phone,c.Fax
+ from Customers c
+
+ exec dbo.sp_lista_clientes
+
+ /*7.Crear un procedimiento almacenado que actualice el precio 
+ unitario de los productos en un determinado porcentaje 
+ para una categoría. (Parámetros % = real, categoria  = entero)*/
+
+select *
+from Products
+where CategoryID=1
+
+update Products
+set UnitPrice=UnitPrice*1.1
+where CategoryID=1
+
+/*
+TRANSACCION: es una porción 
+de código ATOMICA(no se divide) que les permite alterar los registros de una BD
+INSERT
+UPDATE
+DELETE
+
+SQL: autocommit
+
+COMMIT: Reconfirma la transaccion
+ROLLBACK: deshace todo lo realizado
+*/
+
+alter procedure sp_upd_precio_products @IDCategory int,@per real
+as
+begin transaction
+	update Products
+	set UnitPrice=UnitPrice+UnitPrice*@Per/100
+	where CategoryID=@IDCategory
+
+	--manejo de errores
+	if @@ERROR<>0 
+		Rollback transaction
+	else
+		COMMIT
+
+
+--PASO 1:compruebo el estado inicial de los datos
+select * from Products
+where CategoryID=8
+
+--PASO 2:ejecuto la transaccion
+EXEC DBO.sp_upd_precio_products 8,10
+
+--PASO 3:verifico el cambio en la BD
+select * from Products
+where CategoryID=8
+
+/*transferencia de una cuenta a otra*/
+
+create procedure sp_transferencia_bancaria as
+begin transaction
+--Paso 1: select a la cuenta de Alfredo : S/.100
+--Paso 2: update a la cuenta de alfredo: S/100 -S/20(@monto)
+--Paso 3: select a la cuenta de Daniel: S/0
+--Paso 4: update a la cuenta de Daniel: S/0+S/.20(@monto)
+
+@@ERROR<>0: Rollback
+COMMIT
+
+
+
+END
+
+/*PD11 Ejercicio 9*/
+
+create table tb_eventos
+(
+fecha datetime,
+motivo varchar(255)
+)
+
+select * from tb_eventos
+
+alter trigger tr_productos
+--DONDE SE DISPARA EL EVENTO (TABLA)
+on Products --tabla donde se dispara el evento
+for Update --CUANDO SE DISPARA EL EVENTO
+as
+begin
+--QUE DEBE HACER
+
+if UPDATE(UnitsInStock)
+begin
+	insert into tb_eventos
+	select GETDATE(),'Limite de stock del producto: '+ rtrim(ltrim(str(ProductID)))
+	from inserted -- es el espejo de PRODUCTS --deleted
+	where UnitsInStock <=5
+end
+end
+
+select * from tb_eventos
+select * from Products
+
+update Products
+set UnitsInStock=2
+where ProductID=2
+
+update Products
+set ProductName='Lapiz'
+where ProductID=1
+
+/*Ejercicio 10*/
+
+create table tb_departamento
+(
+CDepartamento int NOT NULL,
+NDepartamento varchar(100),
+QEmpleados int,
+constraint PK_Departamento PRIMARY KEY (CDepartamento)
+)
+
+select * from tb_departamento
+
+Create table tb_Empleado
+(
+CEmpleado int NOT NULL,
+NEmpleado Varchar(255),
+CDepartamento int,
+constraint PK_Empleado PRIMARY KEY (Cempleado),
+constraint FK_Departamento FOREIGN KEY (CDepartamento)
+				REFERENCES tb_departamento (CDepartamento)
+)
+
+select * from tb_departamento
+select * from tb_Empleado
+
+insert into tb_departamento
+values (1,'Finanzas',0), (2,'Sistemas',0)
+
+create trigger tr_empleado
+on tb_Empleado--1)donde se dispara
+for Insert--2)cuando se dipara
+as
+begin
+--3) que debe hacer?
+		update tb_Departamento
+		set QEmpleados = QEmpleados+1
+		from inserted--tb_Empleado
+		where tb_Departamento.CDepartamento=inserted.CDepartamento
+end
+
+select * from tb_departamento
+select * from tb_Empleado
+
+insert into tb_Empleado
+values (1,'Rogger Silva',2)
+
+insert into tb_Empleado
+values (2,'Johnny Ramos',1)
+
+/*9.Crear una tabla llamada ESTVTA a partir de los clientes cuya 
+venta anual supere los S/.40,000. 
+Los atributos a considerar son: ID cliente, nombre, 
+venta. Verificar definición de la nueva tabla (sp_Help).*/
+
+create table ESTVTA
+(
+CustomerID nchar(5),
+CompanyName nvarchar(40),
+monto real
+)
+
+select * from ESTVTA
+
+insert into ESTVTA
+select c.CustomerID,c.CompanyName,SUM(od.Quantity*od.UnitPrice*(1-od.Discount))
+from Customers c join Orders o on c.CustomerID=o.CustomerID
+				join [Order Details] od on o.OrderID=od.OrderID
+group by c.CustomerID,c.CompanyName
+having SUM(od.Quantity*od.UnitPrice*(1-od.Discount))>40000
+
+
+/*10.Adicionar una nueva columna a la tabla ESTVTA llamada 
+"Vta1998" (de tipo MONEY). Verificar la nueva estructura 
+de Nueva_Tabla.(sp_help). Actualice el nuevo atributo con 
+la venta acumulada por cliente de 1998.*/
